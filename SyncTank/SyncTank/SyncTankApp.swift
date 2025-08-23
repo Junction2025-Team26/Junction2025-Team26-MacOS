@@ -158,6 +158,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         // 메인 윈도우가 떠있다면 숨기기
         if let mainWindow = NSApp.windows.first(where: { $0.title == "SyncTank" }) {
             if mainWindow.isVisible {
+                print("🪟 메인 윈도우 숨김 (팝오버 표시를 위해)")
                 mainWindow.orderOut(nil)
             }
         }
@@ -190,17 +191,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             print("❌ InsightViewModel을 찾을 수 없음 - 정적 참조가 설정되지 않음")
         }
         
-        // 메인 윈도우가 숨겨져 있다면 다시 표시
-        if let mainWindow = NSApp.windows.first(where: { $0.title == "SyncTank" }) {
-            if !mainWindow.isVisible {
-                print("🪟 메인 윈도우 재표시")
-                mainWindow.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-            } else {
-                print("ℹ️ 메인 윈도우는 이미 표시됨")
+        // 팝오버가 떠있다면 먼저 강제로 숨기기 (MainActor에서 실행)
+        Task { @MainActor in
+            DropPopoverService.shared.forceHide()
+            print("🎭 팝오버 강제 숨김 완료")
+            
+            // 팝오버 숨김 후 약간의 지연을 두고 메인 윈도우 표시
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // 메인 윈도우가 숨겨져 있다면 다시 표시
+                if let mainWindow = NSApp.windows.first(where: { $0.title == "SyncTank" }) {
+                    if !mainWindow.isVisible {
+                        print("🪟 메인 윈도우 재표시")
+                        mainWindow.makeKeyAndOrderFront(nil)
+                        NSApp.activate(ignoringOtherApps: true)
+                    } else {
+                        print("ℹ️ 메인 윈도우는 이미 표시됨")
+                    }
+                } else {
+                    print("❌ 메인 윈도우를 찾을 수 없음")
+                }
             }
-        } else {
-            print("❌ 메인 윈도우를 찾을 수 없음")
         }
         
         print("✅ saveToMainApp 완료")

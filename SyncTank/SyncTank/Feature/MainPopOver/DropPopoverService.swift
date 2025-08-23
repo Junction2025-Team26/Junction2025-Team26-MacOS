@@ -36,6 +36,17 @@ final class DropPopoverService: NSObject {
         stopESCKeyMonitoring()
     }
     
+    func forceHide() {
+        print("🚨 강제 팝오버 숨김 시작")
+        if let panel = panel {
+            panel.orderOut(nil)
+            print("✅ 패널 숨김 완료")
+        }
+        panel = nil
+        stopESCKeyMonitoring()
+        print("✅ 강제 팝오버 숨김 완료")
+    }
+    
     func cleanup() {
         hide()
     }
@@ -205,16 +216,6 @@ final class DropPopoverService: NSObject {
             if let textField = self.findTextField(in: hostingController.view) {
                 panel.makeFirstResponder(textField)
                 print("TextField found and focused immediately: \(textField)")
-            } else {
-                // TextField를 찾을 수 없으면 약간의 지연 후 재시도
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    if let textField = self.findTextField(in: hostingController.view) {
-                        panel.makeFirstResponder(textField)
-                        print("TextField found and focused on retry: \(textField)")
-                    } else {
-                        print("TextField not found after retry")
-                    }
-                }
             }
         }
         
