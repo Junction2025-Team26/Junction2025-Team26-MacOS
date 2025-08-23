@@ -21,7 +21,9 @@ struct InsightDashboard: View {
                         .padding(.horizontal, 24)
                         .padding(.top, 40)
                 } else {
-                    ItemGridView(items: vm.pageItems)
+                    ItemGridView(items: vm.pageItems, onRemove: { item in
+                        vm.remove(item)
+                    })
                         .padding(.horizontal, 24)
                         .padding(.top, 6)
                 }

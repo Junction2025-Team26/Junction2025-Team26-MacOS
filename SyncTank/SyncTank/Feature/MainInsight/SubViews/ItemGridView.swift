@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ItemGridView: View {
     let items: [DashItem]
+    var onRemove: (DashItem) -> Void
     
     private let columns = [
         GridItem(.flexible(), spacing: 24),
@@ -19,7 +20,7 @@ struct ItemGridView: View {
     var body: some View {
         LazyVGrid(columns: columns, spacing: 24) {
             ForEach(items) { item in
-                ResponseCardView(item: item)
+                ResponseCardView(item: item, onRemove: onRemove)
             }
         }
     }

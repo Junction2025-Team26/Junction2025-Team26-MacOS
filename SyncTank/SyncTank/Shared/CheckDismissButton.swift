@@ -13,11 +13,10 @@ struct CheckDismissButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle().fill(.ultraThinMaterial)
-                Circle().stroke(Color.white.opacity(0.6), lineWidth: 1)
+                Circle().fill(Color.white.opacity(0.6))
                 Image(systemName: "checkmark")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.black)
             }
             .frame(width: 24, height: 24)
         }

@@ -46,32 +46,32 @@ struct DashItem: Identifiable, Codable, Hashable {
     }
 }
 
-extension Array where Element == DashItem {
-    static let demo: [DashItem] = [
-        .init(kind: .plan,
-              title: "Don't forget your dinner.",
-              content: "You have a dinner appointment with your friend at 7 p.m. on August 24th."),
-        .init(kind: .plan,
-              title: "Design file detected.",
-              content: "Wireframe update received from the design team.",
-              attachment: .init(isImage: true, fileExt: "PNG",
-                                preview: .url("https://picsum.photos/160/120"), fileURLString: nil)),
-        .init(kind: .insight,
-              title: "A new PDF has been saved.",
-              content: "Marketing strategy document uploaded on August 23rd.",
-              attachment: .init(isImage: false, fileExt: "PDF",
-                                preview: nil, fileURLString: "https://example.com/marketing.pdf")),
-        .init(kind: .insight,
-              title: "Code snippet stored.",
-              content: "xcodeproj file dropped into your workspace.",
-              attachment: .init(isImage: false, fileExt: "XCODEPROJ", preview: nil, fileURLString: nil)),
-        .init(kind: .plan,
-              title: "User flow v2",
-              content: "Screenshot received from QA.",
-              attachment: .init(isImage: true, fileExt: "JPG",
-                                preview: .url("https://picsum.photos/161/121"), fileURLString: nil)),
-        .init(kind: .plan,
-              title: "Don't lose this idea",
-              content: "“What if we merge the onboarding and tutorial screens into one?”")
-    ]
-}
+//extension Array where Element == DashItem {
+//    static let demo: [DashItem] = [
+//        .init(kind: .plan,
+//              title: "Don't forget your dinner.",
+//              content: "You have a dinner appointment with your friend at 7 p.m. on August 24th."),
+//        .init(kind: .plan,
+//              title: "Design file detected.",
+//              content: "Wireframe update received from the design team.",
+//              attachment: .init(isImage: true, fileExt: "PNG",
+//                                preview: .url("https://picsum.photos/160/120"), fileURLString: nil)),
+//        .init(kind: .insight,
+//              title: "A new PDF has been saved.",
+//              content: "Marketing strategy document uploaded on August 23rd.",
+//              attachment: .init(isImage: false, fileExt: "PDF",
+//                                preview: nil, fileURLString: "https://example.com/marketing.pdf")),
+//        .init(kind: .insight,
+//              title: "Code snippet stored.",
+//              content: "xcodeproj file dropped into your workspace.",
+//              attachment: .init(isImage: false, fileExt: "XCODEPROJ", preview: nil, fileURLString: nil)),
+//        .init(kind: .plan,
+//              title: "User flow v2",
+//              content: "Screenshot received from QA.",
+//              attachment: .init(isImage: true, fileExt: "JPG",
+//                                preview: .url("https://picsum.photos/161/121"), fileURLString: nil)),
+//        .init(kind: .plan,
+//              title: "Don't lose this idea",
+//              content: "“What if we merge the onboarding and tutorial screens into one?”")
+//    ]
+//}
