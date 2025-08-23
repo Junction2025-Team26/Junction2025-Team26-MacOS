@@ -80,8 +80,12 @@ final class DropPopoverService: NSObject {
         // SwiftUI 컨텐츠
         let root = PopoverCapsuleInputView(
             onSend: { text, att in
-                onSend(text, att)
-                self.hide()
+                print("🎯 PopoverCapsuleInputView onSend called: \(text)")
+                if let attachment = att {
+                    print("📎 Attachment: \(attachment.filename)")
+                }
+                // 체크 모양의 원형으로 줄어들면서 사라지는 애니메이션
+                self.animateToCheckmarkAndClose(text: text, attachment: att, onSend: onSend)
             },
             onRejectMultiple: { /* 필요시 토스트 등 */ }
         )
@@ -93,18 +97,58 @@ final class DropPopoverService: NSObject {
         .onExitCommand { self.hide() }
         
         let hostingController = NSHostingController(rootView: root)
-        hostingController.view.frame = NSRect(origin: .zero, size: NSSize(width: 420, height: 120))
-        hostingController.view.autoresizingMask = [.width, .height]
+        hostingController.view.frame = NSRect(x: 0, y: 0, width: 420, height: 120)
+        hostingController.view.wantsLayer = true
         
-        p.contentViewController = hostingController
-        p.delegate = self
-        
-        // Clipgo 패턴: 외부 클릭 시 닫힘
-        NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: p, queue: .main) { [weak self] _ in
-            self?.hide()
+        p.contentView = hostingController.view
+        panel = p
+    }
+    
+    private func animateToCheckmarkAndClose(text: String, attachment: AttachmentPayload?, onSend: @escaping (_ text: String, _ attachment: AttachmentPayload?) -> Void) {
+        print("🎬 animateToCheckmarkAndClose 시작: \(text)")
+        guard let panel = panel else { 
+            print("❌ Panel이 nil입니다")
+            return 
         }
         
-        self.panel = p
+        // 체크 모양의 원형 뷰로 교체
+        let checkmarkView = CheckmarkView()
+        let hostingController = NSHostingController(rootView: checkmarkView)
+        hostingController.view.frame = NSRect(x: 0, y: 0, width: 420, height: 120)
+        hostingController.view.wantsLayer = true
+        
+        // 컨텐츠를 체크마크 뷰로 교체
+        panel.contentView = hostingController.view
+        print("✅ 체크마크 뷰로 교체 완료")
+        
+        // 애니메이션과 함께 원형으로 줄어들면서 사라짐
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            print("🎬 원형 애니메이션 시작")
+            NSAnimationContext.runAnimationGroup({ context in
+                context.duration = 0.8
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                
+                // 원형으로 줄어들기
+                let finalSize = NSSize(width: 60, height: 60)
+                let currentFrame = panel.frame
+                let newOrigin = CGPoint(
+                    x: currentFrame.origin.x + (currentFrame.width - finalSize.width) / 2,
+                    y: currentFrame.origin.y + (currentFrame.height - finalSize.height) / 2
+                )
+                
+                panel.animator().setFrame(NSRect(origin: newOrigin, size: finalSize), display: true)
+            }) {
+                print("✅ 원형 애니메이션 완료")
+                // 애니메이션 완료 후 사라짐
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    print("🎯 onSend 콜백 호출: \(text)")
+                    // 메인 앱에 기록 전달
+                    onSend(text, attachment)
+                    print("✅ onSend 콜백 완료")
+                    self.hide()
+                }
+            }
+        }
     }
     
     private func setupPanelPosition() {

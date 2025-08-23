@@ -12,6 +12,9 @@ struct MainInsightView: View {
     
     @StateObject private var vm = InsightViewModel()
     
+    // 정적 참조 추가
+    static var sharedViewModel: InsightViewModel?
+    
     // 입력 상태
     @State private var input = ""
     @State private var pendingAttachment: AttachmentPayload? = nil
@@ -39,6 +42,7 @@ struct MainInsightView: View {
                             .padding(.horizontal, 24)
                             .padding(.top, 6)
                     }
+                    
                     
                     // 페이지네이션
                     HStack(spacing: 12) {
@@ -88,6 +92,10 @@ struct MainInsightView: View {
         }
         .frame(width: Metrics.windowWidth, height: Metrics.windowHeight)
         .preferredColorScheme(.dark)
+        .onAppear {
+            // 정적 참조 설정
+            MainInsightView.sharedViewModel = vm
+        }
     }
     
     private func handleSend() {
