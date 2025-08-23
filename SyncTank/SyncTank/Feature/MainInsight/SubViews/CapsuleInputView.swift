@@ -50,7 +50,6 @@ struct CapsuleInputView: View {
             RoundedRectangle(cornerRadius: Metrics.capsuleCorner, style: .continuous)
                 .stroke(Color.white, lineWidth: 1)
         )
-        .shadow(radius: 8, y: 4)
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
             guard providers.count == 1, pendingAttachment == nil else {
                 onRejectMultiple()
