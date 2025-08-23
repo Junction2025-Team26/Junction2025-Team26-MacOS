@@ -96,8 +96,8 @@ struct PopoverCapsuleInputView: View {
                 print("Focus attempt 3: \(isTextFieldFocusedState)")
             }
             
-            // Command+V 키보드 이벤트 모니터링 시작
-            startKeyboardMonitoring()
+            // 전역 Command+V 노티피케이션 수신 시작
+            startGlobalCommandVListening()
         }
         .onChange(of: isTextFieldFocused) { _, newValue in
             print("TextField focus changed to: \(newValue)")
@@ -110,8 +110,8 @@ struct PopoverCapsuleInputView: View {
             return true
         }
         .onDisappear {
-            // 키보드 모니터링 정리
-            stopKeyboardMonitoring()
+            // 전역 Command+V 노티피케이션 수신 중지
+            stopGlobalCommandVListening()
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isTargeted)
     }
@@ -121,6 +121,25 @@ struct PopoverCapsuleInputView: View {
         text = ""
         pendingAttachment = nil
         pendingFileName = nil
+    }
+    
+    private func startGlobalCommandVListening() {
+        print("📡 팝오버 전역 Command+V 노티피케이션 수신 시작")
+        
+        // 전역 Command+V 노티피케이션 수신
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("GlobalCommandVPaste"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("🎯 팝오버에서 전역 Command+V 노티피케이션 수신됨")
+            self.handleCommandVPaste()
+        }
+    }
+    
+    private func stopGlobalCommandVListening() {
+        print("📡 팝오버 전역 Command+V 노티피케이션 수신 중지")
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name("GlobalCommandVPaste"), object: nil)
     }
     
     private func startKeyboardMonitoring() {

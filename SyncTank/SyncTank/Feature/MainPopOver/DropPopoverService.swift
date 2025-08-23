@@ -83,6 +83,9 @@ final class DropPopoverService: NSObject {
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         p.isMovableByWindowBackground = true
         
+        // 팝오버 윈도우 제목 설정 (전역 키보드 모니터링용)
+        p.title = "Drop Popover"
+        
         // 윈도우 버튼 숨기기
         p.standardWindowButton(.closeButton)?.isHidden = true
         p.standardWindowButton(.miniaturizeButton)?.isHidden = true

@@ -91,13 +91,32 @@ struct CapsuleInputView: View {
             return true
         }
         .onAppear {
-            // Command+V 키보드 이벤트 모니터링 시작
-            startKeyboardMonitoring()
+            // 전역 Command+V 노티피케이션 수신 시작
+            startGlobalCommandVListening()
         }
         .onDisappear {
-            // 키보드 모니터링 정리
-            stopKeyboardMonitoring()
+            // 전역 Command+V 노티피케이션 수신 중지
+            stopGlobalCommandVListening()
         }
+    }
+    
+    private func startGlobalCommandVListening() {
+        print("📡 메인뷰 전역 Command+V 노티피케이션 수신 시작")
+        
+        // 전역 Command+V 노티피케이션 수신
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("MainWindowCommandVPaste"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("🎯 메인뷰에서 전역 Command+V 노티피케이션 수신됨")
+            self.handleCommandVPaste()
+        }
+    }
+    
+    private func stopGlobalCommandVListening() {
+        print("📡 메인뷰 전역 Command+V 노티피케이션 수신 중지")
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name("MainWindowCommandVPaste"), object: nil)
     }
     
     private func startKeyboardMonitoring() {
@@ -128,9 +147,40 @@ struct CapsuleInputView: View {
     private func handleCommandVPaste() {
         print("📋 메인뷰 Command+V 붙여넣기 처리 시작")
         
-        // 클립보드에서 직접 이미지 가져오기
+        // 클립보드에서 직접 이미지 가져오기 (여러 방법 시도)
+        var clipboardImage: NSImage?
+        
+        // 방법 1: NSImage로 직접 읽기
         if let image = NSPasteboard.general.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage {
-            print("✅ 메인뷰 클립보드에서 이미지 발견: \(image.size)")
+            clipboardImage = image
+            print("✅ 메인뷰 클립보드에서 NSImage 직접 읽기 성공: \(image.size)")
+        }
+        
+        // 방법 2: 이미지 데이터로 읽기
+        if clipboardImage == nil {
+            let imageTypes = [UTType.png.identifier, UTType.jpeg.identifier, UTType.tiff.identifier, UTType.image.identifier]
+            for type in imageTypes {
+                if let data = NSPasteboard.general.data(forType: NSPasteboard.PasteboardType(type)) {
+                    if let image = NSImage(data: data) {
+                        clipboardImage = image
+                        print("✅ 메인뷰 클립보드에서 \(type) 데이터로 이미지 읽기 성공: \(image.size)")
+                        break
+                    }
+                }
+            }
+        }
+        
+        // 방법 3: TIFF 데이터로 읽기
+        if clipboardImage == nil {
+            if let tiffData = NSPasteboard.general.data(forType: .tiff) {
+                if let image = NSImage(data: tiffData) {
+                    clipboardImage = image
+                    print("✅ 메인뷰 클립보드에서 TIFF 데이터로 이미지 읽기 성공: \(image.size)")
+                }
+            }
+        }
+        
+        if let image = clipboardImage {
             processClipboardImage(image)
         } else {
             print("ℹ️ 메인뷰 클립보드에 이미지가 없음")
