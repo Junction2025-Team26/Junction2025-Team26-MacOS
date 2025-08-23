@@ -19,10 +19,11 @@ struct CapsulePlaceHolderView: View {
                     .foregroundStyle(.placeHolder)
                     .font(.system(size: 16, weight: .light))
             }
-            TextField("", text: $text, onCommit: { onSend(text) })
+            TextField("", text: $text )
                 .textFieldStyle(.plain)
                 .font(.system(size: 16, weight: .light))
                 .foregroundStyle(.primary)
+                .submitLabel(.send)
                 .onSubmit { onSend(text) }
         }
         .padding(.vertical, 14)

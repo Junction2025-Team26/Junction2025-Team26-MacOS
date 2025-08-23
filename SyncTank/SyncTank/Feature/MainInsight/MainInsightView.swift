@@ -9,6 +9,7 @@ import SwiftUI
 
 
 struct MainInsightView: View {
+    
     @StateObject private var vm = InsightViewModel()
     
     // 입력 상태
