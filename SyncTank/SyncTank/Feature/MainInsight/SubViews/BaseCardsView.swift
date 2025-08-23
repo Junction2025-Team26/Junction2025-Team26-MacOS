@@ -18,23 +18,7 @@ private struct BaseCard<Content: View>: View {
     }
 }
 
-struct TextCardView: View { // Plan/Insight 공용
-    let item: DashItem
-    var body: some View {
-        BaseCard {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(item.title).font(.headline).bold()
-                    Text(item.content).font(.subheadline).foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 12)
-                if let att = item.attachment { RightAttachmentView(attachment: att) }
-            }
-        }
-    }
-}
-
-struct AttachmentOnlyCardView: View { // attachment 전용
+struct ResponseCardView: View { // Plan/Insight/Attachment 공용
     let item: DashItem
     var body: some View {
         BaseCard {

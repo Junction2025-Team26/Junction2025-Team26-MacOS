@@ -45,4 +45,12 @@ final class InsightViewModel: ObservableObject {
         page = 0
     }
     
+    func remove(_ item: DashItem) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                items.removeAll { $0.id == item.id }
+            }
+            // 페이지 보정
+            page = min(page, max(0, pageCount - 1))
+    }
+    
 }
