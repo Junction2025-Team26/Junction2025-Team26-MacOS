@@ -9,7 +9,7 @@ import SwiftUI
 
 @MainActor
 final class InsightViewModel: ObservableObject {
-    enum Tab: String, CaseIterable { case all = "All", plans = "Plans", files = "Files" }
+    enum Tab: String, CaseIterable { case all = "All", plans = "Plans", files = "Files", ideas = "Ideas" }
 
     @Published var selected: Tab = .all
     @Published var page: Int = 0
@@ -21,7 +21,7 @@ final class InsightViewModel: ObservableObject {
         switch selected {
         case .all:   return items
         case .plans: return items.filter { $0.kind == .plan }
-        case .files: return items.filter { $0.kind == .file || $0.kind == .photo }
+        case .insight: return items.filter { $0.kind == .insight || $0.kind == .photo }
         }
     }
 

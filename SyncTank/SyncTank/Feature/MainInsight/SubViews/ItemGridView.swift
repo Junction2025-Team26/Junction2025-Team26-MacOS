@@ -24,7 +24,7 @@ struct ItemGridView: View {
                     PlanCardView(item: item)
                 case .photo:
                     PhotoCardView(item: item)
-                case .file:
+                case .insight:
                     FileCardView(item: item)
                 }
             }
