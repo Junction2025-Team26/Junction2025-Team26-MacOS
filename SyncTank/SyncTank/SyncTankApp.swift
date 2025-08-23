@@ -45,6 +45,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     let iconNames = ["TankIcon1", "TankIcon2", "TankIcon3"]
     var hotkeyPopover: NSPopover?
     
+    // 전역 키보드 모니터링 추가
+    private var globalKeyboardManager: KeyboardManager?
+    
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Dock과 메뉴바 모두에 표시되도록 설정
         NSApp.setActivationPolicy(.regular)
@@ -68,6 +71,42 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         
         // 기본 핫키 등록
         HotKeyManager.shared.registerSavedOrDefaultHotKey(target: self, action: #selector(showPopover))
+        
+        // 전역 키보드 모니터링 시작
+        startGlobalKeyboardMonitoring()
+    }
+    
+    private func startGlobalKeyboardMonitoring() {
+        print("⌨️ 전역 키보드 모니터링 시작")
+        globalKeyboardManager = KeyboardManager()
+        globalKeyboardManager?.startMonitoring { [weak self] in
+            print("🎯 전역 Command+V 감지됨!")
+            DispatchQueue.main.async {
+                self?.handleGlobalCommandV()
+            }
+        }
+    }
+    
+    private func handleGlobalCommandV() {
+        print("📋 전역 Command+V 처리 시작")
+        
+        // 현재 활성화된 윈도우 확인
+        if let keyWindow = NSApp.keyWindow {
+            print("🔑 현재 키 윈도우: \(keyWindow.title)")
+            
+            // 팝오버가 떠있다면 팝오버에 이미지 붙여넣기
+            if keyWindow.title.isEmpty || keyWindow.title == "Drop Popover" {
+                print("🎯 팝오버에 이미지 붙여넣기 시도")
+                // 팝오버의 이미지 붙여넣기 처리
+                NotificationCenter.default.post(name: NSNotification.Name("GlobalCommandVPaste"), object: nil)
+            } else if keyWindow.title == "SyncTank" {
+                print("🎯 메인 윈도우에 이미지 붙여넣기 시도")
+                // 메인 윈도우의 이미지 붙여넣기 처리
+                NotificationCenter.default.post(name: NSNotification.Name("MainWindowCommandVPaste"), object: nil)
+            }
+        } else {
+            print("ℹ️ 활성화된 윈도우가 없음")
+        }
     }
     
     private func setIcon(button: NSStatusBarButton, index: Int) {
