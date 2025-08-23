@@ -9,23 +9,21 @@ import SwiftUI
 
 struct ItemGridView: View {
     let items: [DashItem]
-
+    
     private let columns = [
         GridItem(.flexible(), spacing: 24),
         GridItem(.flexible(), spacing: 24),
         GridItem(.flexible(), spacing: 24)
     ]
-
+    
     var body: some View {
         LazyVGrid(columns: columns, spacing: 24) {
             ForEach(items) { item in
                 switch item.kind {
-                case .plan:
-                    PlanCardView(item: item)
-                case .photo:
-                    PhotoCardView(item: item)
-                case .insight:
-                    FileCardView(item: item)
+                case .plan, .insight:
+                    TextCardView(item: item)          // 텍스트 + (있다면) 오른쪽 첨부
+                case .attachment:
+                    AttachmentOnlyCardView(item: item) // 첨부 전용 카드
                 }
             }
         }
