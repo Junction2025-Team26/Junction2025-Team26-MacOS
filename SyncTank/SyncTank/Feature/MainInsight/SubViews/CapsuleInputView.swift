@@ -41,7 +41,7 @@ struct CapsuleInputView: View {
             .padding(.trailing, 14)
         }
         .padding(.vertical, 12)
-        .frame(width: Metrics.capsuleWidth)
+        .frame(width: Metrics.capsuleWidth, height: Metrics.capsuleHeight)
         .background(
             RoundedRectangle(cornerRadius: Metrics.capsuleCorner, style: .continuous)
                 .fill(Color("CapsuleColor"))

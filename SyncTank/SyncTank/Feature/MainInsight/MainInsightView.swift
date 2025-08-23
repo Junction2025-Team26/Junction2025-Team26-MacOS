@@ -42,9 +42,10 @@ struct MainInsightView: View {
                             .padding(.horizontal, 24)
                             .padding(.top, 6)
                     }
-                    
-                    
-                    // 페이지네이션
+                }
+                
+                // 페이지네이션 (아이템이 6개 초과일 때만 표시)
+                if vm.items.count > 6 {
                     HStack(spacing: 12) {
                         Button { vm.goPrev() } label: {
                             Image(systemName: "chevron.left")
@@ -59,7 +60,7 @@ struct MainInsightView: View {
                         }.disabled(vm.page >= vm.pageCount - 1)
                     }
                     .buttonStyle(.plain)
-                    .padding(.vertical, 18)
+                    .padding(.vertical, 24)
                 }
             }
             .padding(.bottom, 140)

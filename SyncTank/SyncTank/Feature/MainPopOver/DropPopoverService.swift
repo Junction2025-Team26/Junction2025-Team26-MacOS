@@ -24,8 +24,8 @@ final class DropPopoverService: NSObject {
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         
-        // 강제 포커스 설정
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        // 즉시 포커스 설정 (타이밍 단축)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.forceFocus()
         }
     }
@@ -89,10 +89,7 @@ final class DropPopoverService: NSObject {
             },
             onRejectMultiple: { /* 필요시 토스트 등 */ }
         )
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-        )
+
         .frame(width: 420, height: 120)
         .onExitCommand { self.hide() }
         
@@ -114,39 +111,41 @@ final class DropPopoverService: NSObject {
         // 체크 모양의 원형 뷰로 교체
         let checkmarkView = CheckmarkView()
         let hostingController = NSHostingController(rootView: checkmarkView)
-        hostingController.view.frame = NSRect(x: 0, y: 0, width: 420, height: 120)
+        
+        // 체크마크 뷰를 작은 크기로 만들어서 가운데에 배치
+        let checkmarkSize = NSSize(width: 120, height: 120)
+        let currentFrame = panel.frame
+        let newOrigin = CGPoint(
+            x: currentFrame.origin.x + (currentFrame.width - checkmarkSize.width) / 2,
+            y: currentFrame.origin.y + (currentFrame.height - checkmarkSize.height) / 2
+        )
+        
+        hostingController.view.frame = NSRect(origin: .zero, size: checkmarkSize)
         hostingController.view.wantsLayer = true
         
-        // 컨텐츠를 체크마크 뷰로 교체
+        // 컨텐츠를 체크마크 뷰로 교체하고 패널 크기 조정
         panel.contentView = hostingController.view
+        panel.setFrame(NSRect(origin: newOrigin, size: checkmarkSize), display: true)
         print("✅ 체크마크 뷰로 교체 완료")
         
-        // 애니메이션과 함께 원형으로 줄어들면서 사라짐
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            print("🎬 원형 애니메이션 시작")
+        // 체크마크가 나타난 후 페이드 아웃으로 사라짐
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            print("🎬 페이드 아웃 애니메이션 시작")
+            
+            // 페이드 아웃 애니메이션
             NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.8
+                context.duration = 0.5
                 context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
                 
-                // 원형으로 줄어들기
-                let finalSize = NSSize(width: 60, height: 60)
-                let currentFrame = panel.frame
-                let newOrigin = CGPoint(
-                    x: currentFrame.origin.x + (currentFrame.width - finalSize.width) / 2,
-                    y: currentFrame.origin.y + (currentFrame.height - finalSize.height) / 2
-                )
-                
-                panel.animator().setFrame(NSRect(origin: newOrigin, size: finalSize), display: true)
+                // 투명도 애니메이션
+                panel.animator().alphaValue = 0.0
             }) {
-                print("✅ 원형 애니메이션 완료")
-                // 애니메이션 완료 후 사라짐
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    print("🎯 onSend 콜백 호출: \(text)")
-                    // 메인 앱에 기록 전달
-                    onSend(text, attachment)
-                    print("✅ onSend 콜백 완료")
-                    self.hide()
-                }
+                print("✅ 페이드 아웃 완료")
+                print("🎯 onSend 콜백 호출: \(text)")
+                // 메인 앱에 기록 전달
+                onSend(text, attachment)
+                print("✅ onSend 콜백 완료")
+                self.hide()
             }
         }
     }
@@ -200,24 +199,21 @@ final class DropPopoverService: NSObject {
         panel.makeKeyAndOrderFront(nil)
         print("Panel makeKeyAndOrderFront called")
         
-        // 방법 2: 첫 번째 응답자로 설정
+        // 방법 2: 즉시 TextField 찾기 및 포커스 설정
         if let hostingController = panel.contentViewController as? NSHostingController<PopoverCapsuleInputView> {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                // TextField를 직접 찾아서 포커스 설정
-                if let textField = self.findTextField(in: hostingController.view) {
-                    panel.makeFirstResponder(textField)
-                    print("TextField found and focused: \(textField)")
-                    
-                    // 포커스 상태 확인
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if panel.firstResponder == textField {
-                            print("TextField is now first responder")
-                        } else {
-                            print("TextField is NOT first responder. Current: \(String(describing: panel.firstResponder))")
-                        }
+            // 즉시 TextField 찾기 시도
+            if let textField = self.findTextField(in: hostingController.view) {
+                panel.makeFirstResponder(textField)
+                print("TextField found and focused immediately: \(textField)")
+            } else {
+                // TextField를 찾을 수 없으면 약간의 지연 후 재시도
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    if let textField = self.findTextField(in: hostingController.view) {
+                        panel.makeFirstResponder(textField)
+                        print("TextField found and focused on retry: \(textField)")
+                    } else {
+                        print("TextField not found after retry")
                     }
-                } else {
-                    print("TextField not found")
                 }
             }
         }

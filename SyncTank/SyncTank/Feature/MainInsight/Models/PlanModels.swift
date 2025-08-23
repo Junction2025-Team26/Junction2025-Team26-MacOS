@@ -26,8 +26,17 @@ struct AttachmentPayload: Hashable, Codable {
     
     // 채팅 기능을 위한 추가 속성들
     var filename: String {
-        if let urlString = fileURLString, let url = URL(string: urlString) {
-            return url.lastPathComponent
+        if let urlString = fileURLString {
+            // file:// 프로토콜이 포함된 URL인 경우
+            if urlString.hasPrefix("file://") {
+                if let url = URL(string: urlString) {
+                    return url.lastPathComponent
+                }
+            } else {
+                // 절대 경로인 경우 (예: /Users/...)
+                let url = URL(fileURLWithPath: urlString)
+                return url.lastPathComponent
+            }
         }
         return "파일"
     }

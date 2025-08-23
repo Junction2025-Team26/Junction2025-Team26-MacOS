@@ -46,8 +46,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var hotkeyPopover: NSPopover?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 앱이 메인 윈도우을 닫아도 계속 실행되도록 설정
-        NSApp.setActivationPolicy(.accessory)
+        // Dock과 메뉴바 모두에 표시되도록 설정
+        NSApp.setActivationPolicy(.regular)
         
         // 메뉴바 아이콘 생성
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
