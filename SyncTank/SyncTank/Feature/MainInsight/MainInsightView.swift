@@ -112,7 +112,7 @@ struct MainInsightView: View {
     
     private func showToast(_ text: String) {
         toastText = text
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             withAnimation { toastText = nil }
         }
     }

@@ -28,13 +28,9 @@ struct CapsuleInputView: View {
                 }
                 
                 // 텍스트는 항상 존재
-                TextField("Drop, Ask anything", text: $text)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundStyle(.primary)
-                    .submitLabel(.send)
-                    .onSubmit { onSend() }
-                    .padding(.vertical, 14)
+                CapsulePlaceHolderView(text: $text) { _ in
+                    onSend()
+                }
             }
             .padding(.leading, 16)
             
@@ -48,11 +44,11 @@ struct CapsuleInputView: View {
         .frame(width: Metrics.capsuleWidth)
         .background(
             RoundedRectangle(cornerRadius: Metrics.capsuleCorner, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(Color("CapsuleColor"))
         )
         .overlay(
             RoundedRectangle(cornerRadius: Metrics.capsuleCorner, style: .continuous)
-                .stroke(Color.white.opacity(Metrics.capsuleStrokeOpacity), lineWidth: 1)
+                .stroke(Color.white, lineWidth: 1)
         )
         .shadow(radius: 8, y: 4)
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
@@ -65,7 +61,7 @@ struct CapsuleInputView: View {
                 guard let data = item as? Data,
                       let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
                 
-                // ✅ 보안-스코프 접근 열기
+                // 보안-스코프 접근 열기
                 let opened = url.startAccessingSecurityScopedResource()
                 defer { if opened { url.stopAccessingSecurityScopedResource() } }
                 
