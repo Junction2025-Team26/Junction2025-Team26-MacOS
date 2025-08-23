@@ -5,55 +5,77 @@
 //  Created by Demian Yoo on 8/23/25.
 //
 
-import Cocoa
-import Carbon.HIToolbox
+import Foundation
+import HotKey
+import AppKit
 
 final class HotKeyManager {
     static let shared = HotKeyManager()
-    static let hotKeyChangedNotification = Notification.Name("HotKeyChanged")
-    
-    private var hotKeyRef: EventHotKeyRef?
-    private var eventHandlerRef: EventHandlerRef?
+    static let hotKeyChangedNotification = Notification.Name("HotKeyManagerHotKeyChanged")
+
+    private var hotKey: HotKey?
+    private(set) var keyCombo: KeyCombo? = nil
     private let hotKeyUserDefaultsKey = "userHotKey"
-    
+
     // MARK: - Public Methods
     
-    func registerSavedOrDefaultHotKey() {
-        if let (keyCode, modifiers) = loadHotKeyFromUserDefaults() {
-            registerHotKey(keyCode: keyCode, modifiers: modifiers)
+    func registerSavedOrDefaultHotKey(target: AnyObject, action: Selector) {
+        print("🔧 registerSavedOrDefaultHotKey called with target: \(target), action: \(action)")
+        
+        if let (key, modifiers) = loadHotKeyFromUserDefaults() {
+            print("📱 Found saved hotkey in UserDefaults")
+            registerHotKey(key: key, modifiers: modifiers, target: target, action: action)
         } else {
-            registerDefaultHotKey()
+            print("❌ No saved hotkey found, registering default")
+            registerDefaultHotKey(target: target, action: action)
         }
     }
     
-    func updateHotKey(keyCode: UInt32, modifiers: UInt32) {
+    func updateHotKey(key: Key, modifiers: NSEvent.ModifierFlags, target: AnyObject, action: Selector) {
+        print("🔧 updateHotKey called")
         unregister()
-        registerHotKey(keyCode: keyCode, modifiers: modifiers)
-        saveHotKeyToUserDefaults(keyCode: keyCode, modifiers: modifiers)
+        registerHotKey(key: key, modifiers: modifiers, target: target, action: action)
+        saveHotKeyToUserDefaults(key: key, modifiers: modifiers)
         NotificationCenter.default.post(name: HotKeyManager.hotKeyChangedNotification, object: nil)
     }
     
-    func registerDefaultHotKey() {
+    func registerDefaultHotKey(target: AnyObject, action: Selector) {
+        print("🔧 registerDefaultHotKey called with target: \(target), action: \(action)")
+        
         // 기본값: ⌥ + A
-        let keyCode: UInt32 = UInt32(kVK_ANSI_A)
-        let modifiers: UInt32 = UInt32(optionKey)
-        registerHotKey(keyCode: keyCode, modifiers: modifiers)
+        let key: Key = .a
+        let modifiers: NSEvent.ModifierFlags = [.option]
+        
+        print("📝 Default hotkey - key: \(key), modifiers: \(modifiers)")
+        
+        registerHotKey(key: key, modifiers: modifiers, target: target, action: action)
+        
+        // 기본 핫키를 UserDefaults에 저장
+        saveHotKeyToUserDefaults(key: key, modifiers: modifiers)
+        
+        print("✅ Default hotkey registered and saved to UserDefaults")
     }
     
     func unregister() {
-        if let ref = hotKeyRef {
-            UnregisterEventHotKey(ref)
-            hotKeyRef = nil
-        }
-        if let h = eventHandlerRef {
-            RemoveEventHandler(h)
-            eventHandlerRef = nil
-        }
+        print("🔧 unregister called")
+        hotKey = nil
+        keyCombo = nil
+        print("🧹 Unregister completed")
     }
     
     func currentHotKeyDescription() -> String {
-        if let (keyCode, modifiers) = loadHotKeyFromUserDefaults() {
-            return formatHotKeyDescription(keyCode: keyCode, modifiers: modifiers)
+        if let combo = keyCombo {
+            var parts: [String] = []
+            if combo.modifiers.contains(.command) { parts.append("⌘") }
+            if combo.modifiers.contains(.option) { parts.append("⌥") }
+            if combo.modifiers.contains(.shift) { parts.append("⇧") }
+            if combo.modifiers.contains(.control) { parts.append("⌃") }
+            if let key = combo.key {
+                parts.append(key.description)
+            } else {
+                parts.append("?")
+            }
+            return parts.joined(separator: " + ")
         } else {
             return "⌥ + A"
         }
@@ -61,144 +83,86 @@ final class HotKeyManager {
     
     // MARK: - Private Methods
     
-    private func registerHotKey(keyCode: UInt32, modifiers: UInt32) {
+    private func registerHotKey(key: Key, modifiers: NSEvent.ModifierFlags, target: AnyObject, action: Selector) {
+        print("🔧 registerHotKey called")
+        print("📝 Parameters - key: \(key), modifiers: \(modifiers)")
+        print("🎯 Target: \(target), Action: \(action)")
+        
         unregister()
         
-        var hotKeyID = EventHotKeyID(signature: OSType("STHK".fourCC), id: 1)
-        let eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
-                                      eventKind: UInt32(kEventHotKeyPressed))
+        let combo = KeyCombo(key: key, modifiers: modifiers)
+        keyCombo = combo
+        hotKey = HotKey(keyCombo: combo)
         
-        let callback: EventHandlerUPP = { _, eventRef, userData in
-            var hkID = EventHotKeyID()
-            GetEventParameter(eventRef,
-                              EventParamName(kEventParamDirectObject),
-                              EventParamType(typeEventHotKeyID),
-                              nil,
-                              MemoryLayout<EventHotKeyID>.size,
-                              nil,
-                              &hkID)
+        hotKey?.keyDownHandler = { [weak target] in
+            print("🎯 Hotkey callback triggered!")
+            print("📋 Key combo: \(combo)")
             
-            if hkID.signature == OSType("STHK".fourCC), hkID.id == 1 {
-                DispatchQueue.main.async {
-                    DropPopoverService.shared.show { text, att in
-                        // 전송 시에 하고 싶은 처리
-                        print("Popover send: \(text), att=\(String(describing: att))")
-                    }
+            DispatchQueue.main.async {
+                if let target = target {
+                    print("🎯 Executing action on target: \(target)")
+                    _ = target.perform(action)
+                } else {
+                    print("❌ Target is nil")
                 }
             }
-            return noErr
         }
         
-        // 핫키 이벤트 핸들러 설치
-        InstallEventHandler(GetEventDispatcherTarget(),
-                            callback,
-                            1,
-                            [eventType],
-                            nil,
-                            &eventHandlerRef)
-        
-        // 핫키 등록
-        RegisterEventHotKey(keyCode,
-                            modifiers,
-                            hotKeyID,
-                            GetEventDispatcherTarget(),
-                            0,
-                            &hotKeyRef)
+        print("✅ HotKey registered successfully")
+        print("📊 Final status:")
+        print("  - KeyCombo: \(combo)")
+        print("  - HotKey: \(String(describing: hotKey))")
     }
     
-    private func saveHotKeyToUserDefaults(keyCode: UInt32, modifiers: UInt32) {
+    private func saveHotKeyToUserDefaults(key: Key, modifiers: NSEvent.ModifierFlags) {
+        print("💾 saveHotKeyToUserDefaults called")
+        print("📝 Saving - key: \(key), modifiers: \(modifiers)")
+        print("🔑 UserDefaults key: \(hotKeyUserDefaultsKey)")
+        
         let dict: [String: Any] = [
-            "keyCode": keyCode,
-            "modifiers": modifiers
+            "key": key.description,
+            "modifiers": modifiers.rawValue
         ]
+        
         UserDefaults.standard.set(dict, forKey: hotKeyUserDefaultsKey)
-    }
-    
-    private func loadHotKeyFromUserDefaults() -> (UInt32, UInt32)? {
-        guard let dict = UserDefaults.standard.dictionary(forKey: hotKeyUserDefaultsKey),
-              let keyCode = dict["keyCode"] as? UInt32,
-              let modifiers = dict["modifiers"] as? UInt32 else { return nil }
-        return (keyCode, modifiers)
-    }
-    
-    private func formatHotKeyDescription(keyCode: UInt32, modifiers: UInt32) -> String {
-        var parts: [String] = []
         
-        if modifiers & UInt32(optionKey) != 0 { parts.append("⌥") }
-        if modifiers & UInt32(controlKey) != 0 { parts.append("⌃") }
-        if modifiers & UInt32(shiftKey) != 0 { parts.append("⇧") }
-        if modifiers & UInt32(cmdKey) != 0 { parts.append("⌘") }
-        
-        let keyName = getKeyName(keyCode: keyCode)
-        parts.append(keyName)
-        
-        return parts.joined(separator: " + ")
-    }
-    
-    private func getKeyName(keyCode: UInt32) -> String {
-        switch keyCode {
-        case UInt32(kVK_ANSI_A): return "A"
-        case UInt32(kVK_ANSI_B): return "B"
-        case UInt32(kVK_ANSI_C): return "C"
-        case UInt32(kVK_ANSI_D): return "D"
-        case UInt32(kVK_ANSI_E): return "E"
-        case UInt32(kVK_ANSI_F): return "F"
-        case UInt32(kVK_ANSI_G): return "G"
-        case UInt32(kVK_ANSI_H): return "H"
-        case UInt32(kVK_ANSI_I): return "I"
-        case UInt32(kVK_ANSI_J): return "J"
-        case UInt32(kVK_ANSI_K): return "K"
-        case UInt32(kVK_ANSI_L): return "L"
-        case UInt32(kVK_ANSI_M): return "M"
-        case UInt32(kVK_ANSI_N): return "N"
-        case UInt32(kVK_ANSI_O): return "O"
-        case UInt32(kVK_ANSI_P): return "P"
-        case UInt32(kVK_ANSI_Q): return "Q"
-        case UInt32(kVK_ANSI_R): return "R"
-        case UInt32(kVK_ANSI_S): return "S"
-        case UInt32(kVK_ANSI_T): return "T"
-        case UInt32(kVK_ANSI_U): return "U"
-        case UInt32(kVK_ANSI_V): return "V"
-        case UInt32(kVK_ANSI_W): return "W"
-        case UInt32(kVK_ANSI_X): return "X"
-        case UInt32(kVK_ANSI_Y): return "Y"
-        case UInt32(kVK_ANSI_Z): return "Z"
-        case UInt32(kVK_Space): return "Space"
-        case UInt32(kVK_Return): return "Return"
-        case UInt32(kVK_Tab): return "Tab"
-        case UInt32(kVK_Escape): return "Esc"
-        case UInt32(kVK_Delete): return "Delete"
-        case UInt32(kVK_ForwardDelete): return "Forward Delete"
-        case UInt32(kVK_LeftArrow): return "←"
-        case UInt32(kVK_RightArrow): return "→"
-        case UInt32(kVK_UpArrow): return "↑"
-        case UInt32(kVK_DownArrow): return "↓"
-        case UInt32(kVK_ANSI_0): return "0"
-        case UInt32(kVK_ANSI_1): return "1"
-        case UInt32(kVK_ANSI_2): return "2"
-        case UInt32(kVK_ANSI_3): return "3"
-        case UInt32(kVK_ANSI_4): return "4"
-        case UInt32(kVK_ANSI_5): return "5"
-        case UInt32(kVK_ANSI_6): return "6"
-        case UInt32(kVK_ANSI_7): return "7"
-        case UInt32(kVK_ANSI_8): return "8"
-        case UInt32(kVK_ANSI_9): return "9"
-        default: return "?"
+        // 저장 확인
+        if let savedDict = UserDefaults.standard.dictionary(forKey: hotKeyUserDefaultsKey) {
+            print("✅ Successfully saved to UserDefaults: \(savedDict)")
+        } else {
+            print("❌ Failed to save to UserDefaults")
         }
     }
-}
-
-// MARK: - Extensions
-private extension OSType {
-    init(_ s: String) {
-        var result: UInt32 = 0
-        for char in s.utf8.prefix(4) {
-            result = (result << 8) + UInt32(char)
+    
+    private func loadHotKeyFromUserDefaults() -> (Key, NSEvent.ModifierFlags)? {
+        print("🔍 loadHotKeyFromUserDefaults called")
+        print("🔑 UserDefaults key: \(hotKeyUserDefaultsKey)")
+        
+        guard let dict = UserDefaults.standard.dictionary(forKey: hotKeyUserDefaultsKey) else {
+            print("❌ No dictionary found in UserDefaults")
+            return nil
         }
-        self.init(result)
+        
+        print("📱 Dictionary found: \(dict)")
+        
+        guard let keyString = dict["key"] as? String else {
+            print("❌ key not found or wrong type")
+            return nil
+        }
+        
+        guard let modifiersRaw = dict["modifiers"] as? UInt else {
+            print("❌ modifiers not found or wrong type")
+            return nil
+        }
+        
+        guard let key = Key(string: keyString) else {
+            print("❌ Failed to create Key from string: \(keyString)")
+            return nil
+        }
+        
+        let modifiers = NSEvent.ModifierFlags(rawValue: modifiersRaw)
+        
+        print("✅ Successfully loaded - key: \(key), modifiers: \(modifiers)")
+        return (key, modifiers)
     }
-}
-
-private extension String { 
-    var fourCC: UInt32 { OSType(self) } 
 }
