@@ -23,6 +23,7 @@ struct CapsulePlaceHolderView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 16, weight: .light))
                 .foregroundStyle(.primary)
+                .onSubmit { onSend(text) }
         }
         .padding(.vertical, 14)
     }
