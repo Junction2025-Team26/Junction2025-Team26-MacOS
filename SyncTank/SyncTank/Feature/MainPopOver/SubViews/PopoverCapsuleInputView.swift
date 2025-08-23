@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import AppKit
 
 /// 전역 팝오버에서 쓰는 래퍼: 내부 상태 관리 → (text, attachment) 콜백만 밖으로
 struct PopoverCapsuleInputView: View {
@@ -19,6 +20,7 @@ struct PopoverCapsuleInputView: View {
     @State private var isTargeted = false
     @State private var isTextFieldFocused: Bool = false
     @FocusState private var isTextFieldFocusedState: Bool
+    @State private var keyboardManager: KeyboardManager?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -44,6 +46,7 @@ struct PopoverCapsuleInputView: View {
                             isTextFieldFocused = true
                             print("TextField tapped, focus: \(isTextFieldFocused)")
                         }
+
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -92,16 +95,23 @@ struct PopoverCapsuleInputView: View {
                 isTextFieldFocusedState = true
                 print("Focus attempt 3: \(isTextFieldFocusedState)")
             }
+            
+            // Command+V 키보드 이벤트 모니터링 시작
+            startKeyboardMonitoring()
         }
-        .onChange(of: isTextFieldFocused) { newValue in
+        .onChange(of: isTextFieldFocused) { _, newValue in
             print("TextField focus changed to: \(newValue)")
         }
-        .onChange(of: pendingAttachment) { newValue in
+        .onChange(of: pendingAttachment) { _, newValue in
             print("🔄 pendingAttachment 변경됨: \(newValue != nil ? "설정됨" : "nil")")
         }
         .onDrop(of: [UTType.fileURL, UTType.image, UTType.data], isTargeted: $isTargeted) { providers in
             handleFileDrop(providers: providers)
             return true
+        }
+        .onDisappear {
+            // 키보드 모니터링 정리
+            stopKeyboardMonitoring()
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isTargeted)
     }
@@ -111,6 +121,115 @@ struct PopoverCapsuleInputView: View {
         text = ""
         pendingAttachment = nil
         pendingFileName = nil
+    }
+    
+    private func startKeyboardMonitoring() {
+        // 이미 모니터링 중이면 중복 등록 방지
+        if keyboardManager != nil {
+            print("⌨️ 이미 키보드 모니터링 중입니다")
+            return
+        }
+        
+        print("⌨️ 팝오버 키보드 모니터링 시작")
+        
+        // KeyboardManager 인스턴스 생성
+        keyboardManager = KeyboardManager()
+        keyboardManager?.startMonitoring {
+            print("🎯 팝오버 Command+V 감지됨!")
+            DispatchQueue.main.async {
+                self.handleCommandVPaste()
+            }
+        }
+    }
+    
+    private func stopKeyboardMonitoring() {
+        keyboardManager?.stopMonitoring()
+        keyboardManager = nil
+        print("⌨️ 팝오버 키보드 모니터링 중지")
+    }
+    
+    private func handleCommandVPaste() {
+        print("📋 Command+V 붙여넣기 처리 시작")
+        
+        // 클립보드에서 직접 이미지 가져오기
+        if let image = NSPasteboard.general.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage {
+            print("✅ 클립보드에서 이미지 발견: \(image.size)")
+            processClipboardImage(image)
+        } else {
+            print("ℹ️ 클립보드에 이미지가 없음")
+            print("🔍 클립보드 내용 확인:")
+            let types = NSPasteboard.general.types
+            print("📋 클립보드 타입들: \(types)")
+            
+            // 텍스트가 있는지도 확인
+            if let text = NSPasteboard.general.string(forType: .string) {
+                print("📝 클립보드 텍스트: \(text)")
+            }
+        }
+    }
+    
+    private func handleImagePaste(providers: [NSItemProvider]) {
+        print("🖼️ 이미지 붙여넣기 처리 시작")
+        print("📊 입력된 providers: \(providers)")
+        
+        guard let provider = providers.first else { 
+            print("❌ provider가 nil")
+            return 
+        }
+        
+        print("🔍 provider 타입들: \(provider.registeredTypeIdentifiers)")
+        print("🔍 provider 클래스: \(type(of: provider))")
+        
+        // 이미지 데이터 로드
+        if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+            print("✅ UTType.image 지원 확인")
+            provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, error in
+                print("🔄 UTType.image 데이터 로드 콜백 실행")
+                if let error = error {
+                    print("❌ 이미지 데이터 로드 실패: \(error)")
+                    return
+                }
+                
+                print("📊 로드된 데이터 크기: \(data?.count ?? 0) bytes")
+                guard let data = data, let nsImage = NSImage(data: data) else {
+                    print("❌ NSImage 생성 실패")
+                    return
+                }
+                
+                print("✅ NSImage 생성 성공: \(nsImage.size)")
+                DispatchQueue.main.async {
+                    print("🔄 메인 스레드에서 processClipboardImage 호출")
+                    self.processClipboardImage(nsImage)
+                }
+            }
+        } else if provider.hasItemConformingToTypeIdentifier(UTType.png.identifier) {
+            print("✅ UTType.png 지원 확인")
+            provider.loadDataRepresentation(forTypeIdentifier: UTType.png.identifier) { data, error in
+                print("🔄 UTType.png 데이터 로드 콜백 실행")
+                if let error = error {
+                    print("❌ PNG 데이터 로드 실패: \(error)")
+                    return
+                }
+                
+                print("📊 로드된 PNG 데이터 크기: \(data?.count ?? 0) bytes")
+                guard let data = data, let nsImage = NSImage(data: data) else {
+                    print("❌ NSImage 생성 실패")
+                    return
+                }
+                
+                print("✅ PNG NSImage 생성 성공: \(nsImage.size)")
+                DispatchQueue.main.async {
+                    print("🔄 메인 스레드에서 processClipboardImage 호출")
+                    self.processClipboardImage(nsImage)
+                }
+            }
+        } else {
+            print("❌ 지원하는 이미지 타입이 없음")
+            print("🔍 사용 가능한 타입들:")
+            for type in provider.registeredTypeIdentifiers {
+                print("  - \(type)")
+            }
+        }
     }
     
     private func handleFileDrop(providers: [NSItemProvider]) {
@@ -147,6 +266,63 @@ struct PopoverCapsuleInputView: View {
             } else {
                 print("❌ 처리할 URL이 없음")
             }
+        }
+    }
+    
+    private func processClipboardImage(_ image: NSImage) {
+        print("🖼️ 클립보드 이미지 처리 시작")
+        print("📊 입력 이미지 크기: \(image.size)")
+        print("📊 입력 이미지 클래스: \(type(of: image))")
+        
+        // 이미지를 임시 파일로 저장
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = "pasted_image_\(Date().timeIntervalSince1970).png"
+        let tempURL = tempDir.appendingPathComponent(fileName)
+        print("📁 임시 파일 경로: \(tempURL)")
+        
+        // PNG 데이터로 변환
+        print("🔄 TIFF 데이터 추출 시도")
+        if let tiffData = image.tiffRepresentation {
+            print("✅ TIFF 데이터 추출 성공: \(tiffData.count) bytes")
+            
+            print("🔄 NSBitmapImageRep 생성 시도")
+            if let bitmapImage = NSBitmapImageRep(data: tiffData) {
+                print("✅ NSBitmapImageRep 생성 성공")
+                
+                print("🔄 PNG 데이터 변환 시도")
+                if let pngData = bitmapImage.representation(using: .png, properties: [:]) {
+                    print("✅ PNG 데이터 변환 성공: \(pngData.count) bytes")
+                    
+                    do {
+                        try pngData.write(to: tempURL)
+                        print("✅ 붙여넣기 이미지 임시 파일 생성: \(tempURL)")
+                        
+                        // 첨부파일로 설정
+                        let attachment = AttachmentPayload(
+                            isImage: true,
+                            fileExt: "PNG",
+                            preview: .localPath(tempURL.path),
+                            fileURLString: tempURL.path
+                        )
+                        
+                        pendingAttachment = attachment
+                        pendingFileName = fileName
+                        
+                        print("✅ 붙여넣기 이미지가 첨부파일로 설정됨")
+                        print("📊 pendingAttachment: \(pendingAttachment != nil ? "설정됨" : "nil")")
+                        print("📊 pendingFileName: \(pendingFileName ?? "nil")")
+                        
+                    } catch {
+                        print("❌ 붙여넣기 이미지 저장 실패: \(error)")
+                    }
+                } else {
+                    print("❌ PNG 데이터 변환 실패")
+                }
+            } else {
+                print("❌ NSBitmapImageRep 생성 실패")
+            }
+        } else {
+            print("❌ TIFF 데이터 추출 실패")
         }
     }
     
