@@ -23,6 +23,67 @@ struct AttachmentPayload: Hashable, Codable {
     let fileExt: String?      // "PDF" 등 (isImage=false 일 때 주로 사용)
     let preview: ImageSource? // isImage=true면 거의 필수
     let fileURLString: String?// 파일 원본 URL/경로 (옵션)
+    
+    // 채팅 기능을 위한 추가 속성들
+    var filename: String {
+        if let urlString = fileURLString {
+            // file:// 프로토콜이 포함된 URL인 경우
+            if urlString.hasPrefix("file://") {
+                if let url = URL(string: urlString) {
+                    return url.lastPathComponent
+                }
+            } else {
+                // 절대 경로인 경우 (예: /Users/...)
+                let url = URL(fileURLWithPath: urlString)
+                return url.lastPathComponent
+            }
+        }
+        return "파일"
+    }
+    
+    var fileExtension: String {
+        return fileExt?.lowercased() ?? ""
+    }
+    
+    var iconName: String {
+        if isImage {
+            return "photo"
+        }
+        
+        switch fileExtension {
+        case "pdf":
+            return "doc.text"
+        case "txt", "md":
+            return "doc.plaintext"
+        case "mp3", "wav", "aac":
+            return "music.note"
+        case "mp4", "mov", "avi":
+            return "video"
+        default:
+            return "doc"
+        }
+    }
+    
+    var fileURL: URL? {
+        guard let urlString = fileURLString else { return nil }
+        return URL(string: urlString)
+    }
+    
+    // 채팅용 초기화 메서드
+    init(filename: String, fileExtension: String, iconName: String, fileURL: URL) {
+        self.isImage = ["jpg", "jpeg", "png", "gif", "heic"].contains(fileExtension.lowercased())
+        self.fileExt = fileExtension.uppercased()
+        self.preview = .localPath(fileURL.path)
+        self.fileURLString = fileURL.absoluteString
+    }
+    
+    // 기존 초기화 메서드
+    init(isImage: Bool, fileExt: String?, preview: ImageSource?, fileURLString: String?) {
+        self.isImage = isImage
+        self.fileExt = fileExt
+        self.preview = preview
+        self.fileURLString = fileURLString
+    }
 }
 
 

@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C7B7FDCF2E59907D0066F584 /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = C7B7FDCE2E59907D0066F584 /* HotKey */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		D5D1B9532E58E8070028C772 /* SyncTank.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SyncTank.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C7B7FDCF2E59907D0066F584 /* HotKey in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = SyncTank;
 			packageProductDependencies = (
+				C7B7FDCE2E59907D0066F584 /* HotKey */,
 			);
 			productName = SyncTank;
 			productReference = D5D1B9532E58E8070028C772 /* SyncTank.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = D5D1B94A2E58E8070028C772;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C7B7FDCD2E59907D0066F584 /* XCRemoteSwiftPackageReference "HotKey" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D5D1B9542E58E8070028C772 /* Products */;
 			projectDirPath = "";
@@ -254,7 +263,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9S8SHSW95K;
+				DEVELOPMENT_TEAM = RP5GZ99V95;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -281,7 +290,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9S8SHSW95K;
+				DEVELOPMENT_TEAM = RP5GZ99V95;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -321,6 +330,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C7B7FDCD2E59907D0066F584 /* XCRemoteSwiftPackageReference "HotKey" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/soffes/HotKey.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C7B7FDCE2E59907D0066F584 /* HotKey */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C7B7FDCD2E59907D0066F584 /* XCRemoteSwiftPackageReference "HotKey" */;
+			productName = HotKey;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D5D1B94B2E58E8070028C772 /* Project object */;
 }

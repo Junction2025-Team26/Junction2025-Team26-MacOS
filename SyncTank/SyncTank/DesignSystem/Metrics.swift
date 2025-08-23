@@ -15,7 +15,7 @@ enum Metrics {
     
     // 캡슐 사이즈
     static let capsuleWidth: CGFloat = 372
-    static let capsuleHeight: CGFloat = 112
+    static let capsuleHeight: CGFloat = 120
     static let capsuleCorner: CGFloat = 40
     
     static let capsuleStrokeOpacity: CGFloat = 0.12

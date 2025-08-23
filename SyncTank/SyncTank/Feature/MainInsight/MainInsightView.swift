@@ -12,6 +12,9 @@ struct MainInsightView: View {
     
     @StateObject private var vm = InsightViewModel()
     
+    // 정적 참조 추가
+    static var sharedViewModel: InsightViewModel?
+    
     // 입력 상태
     @State private var input = ""
     @State private var pendingAttachment: AttachmentPayload? = nil
@@ -39,8 +42,10 @@ struct MainInsightView: View {
                             .padding(.horizontal, 24)
                             .padding(.top, 6)
                     }
-                    
-                    // 페이지네이션
+                }
+                
+                // 페이지네이션 (아이템이 6개 초과일 때만 표시)
+                if vm.items.count > 6 {
                     HStack(spacing: 12) {
                         Button { vm.goPrev() } label: {
                             Image(systemName: "chevron.left")
@@ -55,7 +60,7 @@ struct MainInsightView: View {
                         }.disabled(vm.page >= vm.pageCount - 1)
                     }
                     .buttonStyle(.plain)
-                    .padding(.vertical, 18)
+                    .padding(.vertical, 24)
                 }
             }
             .padding(.bottom, 140)
@@ -88,6 +93,10 @@ struct MainInsightView: View {
         }
         .frame(width: Metrics.windowWidth, height: Metrics.windowHeight)
         .preferredColorScheme(.dark)
+        .onAppear {
+            // 정적 참조 설정
+            MainInsightView.sharedViewModel = vm
+        }
     }
     
     private func handleSend() {
