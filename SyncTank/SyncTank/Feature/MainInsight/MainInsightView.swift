@@ -76,7 +76,7 @@ struct MainInsightView: View {
                         showToast("Type something or attach a file/photo.")
                         return
                     }
-                    
+                        
                     isSending = true
                     Task { @MainActor in
                         await vm.sendAndReload(text: vm.inputText, attachment: vm.pendingAttachment)

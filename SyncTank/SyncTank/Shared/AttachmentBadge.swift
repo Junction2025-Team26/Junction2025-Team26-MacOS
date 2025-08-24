@@ -25,9 +25,11 @@ struct RightAttachmentView: View {
     
     var body: some View {
         Group {
-            // ⬇️ 여기만 교체
-            if let src = attachment.preview,
-               (attachment.isImage ?? attachment.guessIsImage(from: src)) {
+            // isImage가 false면 아무것도 표시하지 않음
+            if attachment.isImage == false {
+                EmptyView()
+            } else if let src = attachment.preview,
+                      (attachment.isImage ?? attachment.guessIsImage(from: src)) {
                 ThumbFromImageSource(source: src)
                     .frame(width: 92, height: 72)
                     .clipped()
@@ -134,11 +136,11 @@ extension AttachmentPayload {
         case .url(let s):
             let low = s.lowercased()
             return low.hasSuffix(".png") || low.hasSuffix(".jpg") || low.hasSuffix(".jpeg")
-                || low.hasSuffix(".gif") || low.hasSuffix(".heic") || low.contains("data:image")
+            || low.hasSuffix(".gif") || low.hasSuffix(".heic") || low.contains("data:image")
         case .localPath(let path):
             let low = path.lowercased()
             return low.hasSuffix(".png") || low.hasSuffix(".jpg") || low.hasSuffix(".jpeg")
-                || low.hasSuffix(".gif") || low.hasSuffix(".heic")
+            || low.hasSuffix(".gif") || low.hasSuffix(".heic")
         }
     }
 }

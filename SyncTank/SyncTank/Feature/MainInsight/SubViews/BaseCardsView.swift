@@ -34,8 +34,8 @@ struct ResponseCardView: View { // Plan/Insight/Attachment 공용
                         Text(item.title).font(.headline).bold()
                         Text(item.content).font(.subheadline).foregroundStyle(.secondary)
                     }
-                    Spacer(minLength: 12)
                     if let att = item.attachment {
+                        Spacer(minLength: 12)
                         RightAttachmentView(attachment: att)
                     }
                 }
