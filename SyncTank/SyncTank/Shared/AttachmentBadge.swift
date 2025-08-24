@@ -25,13 +25,14 @@ struct RightAttachmentView: View {
     
     var body: some View {
         Group {
-            if attachment.isImage, let src = attachment.preview {
+            // ⬇️ 여기만 교체
+            if let src = attachment.preview,
+               (attachment.isImage ?? attachment.guessIsImage(from: src)) {
                 ThumbFromImageSource(source: src)
-                    .frame(width: 96, height: 72)
+                    .frame(width: 92, height: 72)
                     .clipped()
                     .cornerRadius(8)
             } else {
-                // 파일 배지
                 HStack(spacing: 8) {
                     Image(systemName: "doc.fill").font(.system(size: 14))
                     Text((attachment.fileExt ?? "FILE").uppercased())
@@ -60,7 +61,17 @@ struct ThumbFromImageSource: View {
                 Color.gray.opacity(0.2)
             }
         case .base64(let b64):
-            if let data = Data(base64Encoded: b64), let nsimg = NSImage(data: data) {
+            // 1) data URL 접두어 제거
+            let cleaned: String = {
+                if let range = b64.range(of: "base64,") {
+                    return String(b64[range.upperBound...])
+                }
+                return b64
+            }()
+            
+            // 2) 줄바꿈/공백 무시 옵션으로 디코딩
+            if let data = Data(base64Encoded: cleaned, options: .ignoreUnknownCharacters),
+               let nsimg = NSImage(data: data) {
                 Image(nsImage: nsimg).resizable().aspectRatio(contentMode: .fill)
             } else {
                 Color.gray.opacity(0.2)
@@ -113,5 +124,21 @@ private struct PreviewImage: View {
         RoundedRectangle(cornerRadius: 8)
             .fill(Color.white.opacity(0.08))
             .overlay(Image(systemName: "photo").font(.system(size: 16)).foregroundStyle(.secondary))
+    }
+}
+extension AttachmentPayload {
+    func guessIsImage(from source: ImageSource) -> Bool {
+        switch source {
+        case .base64:
+            return true
+        case .url(let s):
+            let low = s.lowercased()
+            return low.hasSuffix(".png") || low.hasSuffix(".jpg") || low.hasSuffix(".jpeg")
+                || low.hasSuffix(".gif") || low.hasSuffix(".heic") || low.contains("data:image")
+        case .localPath(let path):
+            let low = path.lowercased()
+            return low.hasSuffix(".png") || low.hasSuffix(".jpg") || low.hasSuffix(".jpeg")
+                || low.hasSuffix(".gif") || low.hasSuffix(".heic")
+        }
     }
 }

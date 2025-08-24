@@ -222,12 +222,14 @@ struct CapsuleInputView: View {
                         try pngData.write(to: tempURL)
                         print("✅ 메인뷰 붙여넣기 이미지 임시 파일 생성: \(tempURL)")
                         
+                        let base64String = pngData.base64EncodedString()
+                        
                         // 첨부파일로 설정
                         let attachment = AttachmentPayload(
                             isImage: true,
                             fileExt: "PNG",
-                            preview: .localPath(tempURL.path),
-                            fileURLString: tempURL.path
+                            preview: .base64(base64String),
+                            fileURLString: nil
                         )
                         
                         pendingAttachment = attachment

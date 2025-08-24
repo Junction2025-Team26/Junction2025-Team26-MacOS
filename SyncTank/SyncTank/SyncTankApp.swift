@@ -197,7 +197,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         // 메인 윈도우가 떠있다면 숨기기
         if let mainWindow = NSApp.windows.first(where: { $0.title == "SyncTank" }) {
             if mainWindow.isVisible {
-                print("🪟 메인 윈도우 숨김 (팝오버 표시를 위해)")
+                print("�� 메인 윈도우 숨김 (팝오버 표시를 위해)")
                 mainWindow.orderOut(nil)
             }
         }
@@ -210,21 +210,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             }
         }
     }
-    
+
     private func saveToMainApp(text: String, attachment: AttachmentPayload?) {
         print("📝 saveToMainApp 호출됨")
         // 메인 앱에 기록 저장
         print("📝 팝오버에서 전송됨: \(text)")
         if let attachment = attachment {
-            print("📎 첨부파일: \(attachment.filename)")
+            print("�� 첨부파일: \(attachment.filename)")
         }
         
         // ✅ 메인 앱의 데이터 모델에 저장
         if let sharedViewModel = MainInsightView.sharedViewModel {
             // MainActor에서 실행
             Task { @MainActor in
-                sharedViewModel.addFromComposer(text: text, attachment: attachment)
-                print("✅ 데이터가 InsightViewModel에 저장됨")
+                await sharedViewModel.sendAndReload(text: text, attachment: attachment)
+                print("✅ 서버에 저장 및 fetch 완료됨")
             }
         } else {
             print("❌ InsightViewModel을 찾을 수 없음 - 정적 참조가 설정되지 않음")

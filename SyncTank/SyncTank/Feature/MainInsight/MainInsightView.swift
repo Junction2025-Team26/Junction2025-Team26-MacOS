@@ -15,13 +15,12 @@ struct MainInsightView: View {
     // 정적 참조 추가
     static var sharedViewModel: InsightViewModel?
     
-    // 입력 상태
-    @State private var input = ""
-    @State private var pendingAttachment: AttachmentPayload? = nil
-    @State private var pendingFileName: String? = nil
-    
     // 토스트
     @State private var toastText: String? = nil
+    
+    // ⬇️ 추가: 전송 중/체크 뱃지 상태
+    @State private var isSending = false
+    @State private var showCheck = false
     
     var body: some View {
         
@@ -67,10 +66,22 @@ struct MainInsightView: View {
             
             // 플로팅 캡슐
             CapsuleInputView(
-                text: $input,
-                pendingAttachment: $pendingAttachment,
-                pendingFileName: $pendingFileName,
-                onSend: handleSend,
+                text: $vm.inputText,
+                pendingAttachment: $vm.pendingAttachment,
+                pendingFileName: $vm.pendingFileName,
+                onSend: {
+                    guard !vm.inputText.trimmingCharacters(in: .whitespaces).isEmpty || vm.pendingAttachment != nil else {
+                        showToast("Type something or attach a file/photo.")
+                        return
+                    }
+                    Task { @MainActor in
+                        await vm.sendAndReload(text: vm.inputText, attachment: vm.pendingAttachment)
+                        vm.inputText = ""
+                        vm.pendingAttachment = nil
+                        vm.pendingFileName = nil
+                        showToast("Sent.")
+                    }
+                },
                 onRejectMultiple: {
                     showToast("Only one file or photo can be attached.")
                 }
@@ -96,28 +107,10 @@ struct MainInsightView: View {
         .onAppear {
             // 정적 참조 설정
             MainInsightView.sharedViewModel = vm
+            Task {
+                await vm.fetchLatest()
+            }
         }
-    }
-    
-    private func handleSend() {
-        // 1개 초과 방어는 캡슐에서 이미 처리됐지만 안전망
-        // 텍스트도 비고, 첨부도 없으면 무시
-        if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && pendingAttachment == nil {
-            showToast("Type something or attach a file/photo.")
-            return
-        }
-        
-        vm.addFromComposer(text: input, attachment: pendingAttachment)
-        
-        // 전송 후 초기화
-        input = ""
-        pendingAttachment = nil
-        pendingFileName = nil
-        
-        // 서버 전송은 여기서 TODO:
-        // TODO: build payload (text + base64 file if any) and POST
-        // TODO: success/failure에 따라 토스트
-        showToast("Sent.")
     }
     
     private func showToast(_ text: String) {

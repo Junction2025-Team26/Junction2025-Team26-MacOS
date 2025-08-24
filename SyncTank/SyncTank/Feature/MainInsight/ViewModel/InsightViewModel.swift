@@ -11,6 +11,10 @@ import SwiftUI
 final class InsightViewModel: ObservableObject {
     enum Tab: String, CaseIterable { case all = "All", plans = "Plans", insight = "Insight" }
     
+    @Published var inputText: String = ""
+    @Published var pendingAttachment: AttachmentPayload? = nil
+    @Published var pendingFileName: String? = nil
+    
     @Published var selected: Tab = .all
     @Published var page: Int = 0
     
@@ -55,16 +59,47 @@ final class InsightViewModel: ObservableObject {
     }
     
     // 캡슐에서 Send 눌렀을 때 추가 (디폴트 .plan)
-    func addFromComposer(text: String, attachment: AttachmentPayload?) {
-        let newItem = DashItem(
-            kind: .plan,
+    func sendAndReload(text: String, attachment: AttachmentPayload?) async {
+        print("🔍 sendAndReload 시작")
+        
+        // Step 1: 서버 저장 요청
+        let service = SyncTankService()
+        let result = await service.saveDocument(
+            id: UUID().uuidString,
+            kind: "plan",
             title: text.isEmpty ? "Untitled" : text,
-            content: attachment?.isImage == true ? "Attached an image." :
-                (attachment != nil ? "Attached a file." : "Text only."),
-            attachment: attachment
+            content: text,
+            leftTime: nil,
+            attachment: attachment,
+            isUpdated: false
         )
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
-            items.insert(newItem, at: 0)
+        
+        switch result {
+        case .success:
+            print("✅ 저장 성공 → fetch 시작")
+            await fetchLatest()
+            print("🔍 fetchLatest 완료, items 개수: \(items.count)")
+        case .failure(let err):
+            print("❌ 저장 실패:", err)
+        }
+    }
+    
+    func fetchLatest() async {
+        print("🔍 fetchLatest 시작")
+        let service = SyncTankService()
+        let result = await service.fetchDocuments()
+        
+        await MainActor.run {
+            switch result {
+            case .success(let items):
+                print("🔍 서버에서 받은 items 개수: \(items.count)")
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                    self.items = items.sorted(by: { $0.title > $1.title })
+                }
+                print("🔍 UI 업데이트 완료, 현재 items 개수: \(self.items.count)")
+            case .failure(let error):
+                print("❌ fetch 실패: \(error)")
+            }
         }
     }
     

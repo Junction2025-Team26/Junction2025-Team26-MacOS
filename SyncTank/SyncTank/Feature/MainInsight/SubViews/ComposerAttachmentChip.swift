@@ -17,7 +17,7 @@ struct ComposerAttachmentChip: View {
     var body: some View {
         HStack(spacing: 10) {
             // 썸네일 또는 아이콘
-            if attachment.isImage, let src = attachment.preview {
+            if attachment.isImage == true, let src = attachment.preview {
                 ThumbFromImageSource(source: src)
                     .frame(width: 36, height: 28)
                     .clipped()
